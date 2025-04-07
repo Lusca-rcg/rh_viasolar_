@@ -1,4 +1,3 @@
-project/
-├── app.py
-├── requirements.txt
-└── Procfile
+flask
+gunicorn
+PyPDF2
