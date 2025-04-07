@@ -46,6 +46,8 @@ def index():
 
         <div id="result"></div>
 
+        <a href="/webhook">Ir para envio via Webhook</a>
+
         <script>
             const form = document.getElementById("uploadForm");
             const resultDiv = document.getElementById("result");
@@ -69,6 +71,63 @@ def index():
                     a.remove();
                 } catch (error) {
                     resultDiv.innerHTML = `<p>Erro: ${error.message}</p>`;
+                }
+            });
+        </script>
+    </body>
+    </html>
+    '''
+    return render_template_string(html_content)
+
+# Nova página para envio via Webhook
+@app.route('/webhook')
+def webhook_page():
+    html_content = '''
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <title>Envio via Webhook</title>
+    </head>
+    <body>
+        <h2>Envio de Arquivos via Webhook</h2>
+        <form id="webhookForm">
+            <label for="url">URL do Webhook:</label>
+            <input type="text" id="url" name="url" placeholder="Digite a URL do webhook" required><br><br>
+            <input type="file" id="files" name="files" multiple required>
+            <button type="submit">Enviar via Webhook</button>
+        </form>
+
+        <div id="webhookResult"></div>
+
+        <script>
+            const webhookForm = document.getElementById("webhookForm");
+            const webhookResult = document.getElementById("webhookResult");
+
+            webhookForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const url = document.getElementById("url").value;
+                const files = document.getElementById("files").files;
+                const formData = new FormData();
+
+                for (let file of files) {
+                    formData.append("files", file, file.name);
+                }
+
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        webhookResult.innerHTML = "<p>Arquivos enviados com sucesso!</p>";
+                    } else {
+                        webhookResult.innerHTML = "<p>Erro ao enviar arquivos.</p>";
+                    }
+                } catch (error) {
+                    webhookResult.innerHTML = `<p>Erro: ${error.message}</p>`;
                 }
             });
         </script>
@@ -112,4 +171,3 @@ def upload_pdf():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8000)))
-    # Para produção, use o comando abaixo: 
