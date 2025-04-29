@@ -35,18 +35,42 @@ def index():
     <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
-        <title>Dividir PDF</title>
+        <title>Dividir PDF de Contracheques</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+            h2 { color: #333; }
+            form { margin-top: 20px; }
+            input[type="file"] { margin-bottom: 10px; display: block; }
+            button { 
+                background-color: #4CAF50; 
+                color: white; 
+                padding: 10px 15px; 
+                border: none; 
+                border-radius: 4px; 
+                cursor: pointer; 
+            }
+            button:hover { background-color: #45a049; }
+            #result { margin-top: 20px; }
+            .info { 
+                background-color: #f8f9fa; 
+                padding: 15px; 
+                border-radius: 4px; 
+                margin-bottom: 20px;
+                font-size: 14px;
+            }
+        </style>
     </head>
     <body>
-        <h2>Upload de PDF para Divisão</h2>
+        <h2>Dividir PDF de Contracheques</h2>
+        <div class="info">
+            <p>Envie um arquivo PDF com contracheques para dividir em arquivos individuais.</p>
+        </div>
         <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/upload">
             <input type="file" name="pdf" accept=".pdf" required>
-            <button type="submit">Enviar</button>
+            <button type="submit">Dividir PDF</button>
         </form>
 
         <div id="result"></div>
-
-        <a href="/webhook">Ir para envio via Webhook</a>
 
         <script>
             const form = document.getElementById("uploadForm");
@@ -54,6 +78,8 @@ def index():
 
             form.addEventListener("submit", async (e) => {
                 e.preventDefault();
+                resultDiv.innerHTML = "<p>Processando PDF, aguarde...</p>";
+                
                 const formData = new FormData(form);
 
                 try {
@@ -61,73 +87,23 @@ def index():
                         method: "POST",
                         body: formData
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
                     const blob = await response.blob();
                     const downloadUrl = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = downloadUrl;
-                    a.download = "pdf_dividido.zip";
+                    a.download = "contracheques_divididos.zip";
                     document.body.appendChild(a);
                     a.click();
                     a.remove();
+                    URL.revokeObjectURL(downloadUrl);
+                    resultDiv.innerHTML = "<p style='color:green;'>Download iniciado!</p>";
                 } catch (error) {
-                    resultDiv.innerHTML = `<p>Erro: ${error.message}</p>`;
-                }
-            });
-        </script>
-    </body>
-    </html>
-    '''
-    return render_template_string(html_content)
-
-# Nova página para envio via Webhook
-@app.route('/webhook')
-def webhook_page():
-    html_content = '''
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <title>Envio via Webhook</title>
-    </head>
-    <body>
-        <h2>Envio de Arquivos via Webhook</h2>
-        <form id="webhookForm">
-            <label for="url">URL do Webhook:</label>
-            <input type="text" id="url" name="url" placeholder="Digite a URL do webhook" required><br><br>
-            <input type="file" id="files" name="files" multiple required>
-            <button type="submit">Enviar via Webhook</button>
-        </form>
-
-        <div id="webhookResult"></div>
-
-        <script>
-            const webhookForm = document.getElementById("webhookForm");
-            const webhookResult = document.getElementById("webhookResult");
-
-            webhookForm.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                const url = document.getElementById("url").value;
-                const files = document.getElementById("files").files;
-                const formData = new FormData();
-
-                for (let file of files) {
-                    formData.append("files", file, file.name);
-                }
-
-                try {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        webhookResult.innerHTML = "<p>Arquivos enviados com sucesso!</p>";
-                    } else {
-                        webhookResult.innerHTML = "<p>Erro ao enviar arquivos.</p>";
-                    }
-                } catch (error) {
-                    webhookResult.innerHTML = `<p>Erro: ${error.message}</p>`;
+                    resultDiv.innerHTML = `<p style='color:red;'>Erro: ${error.message}</p>`;
                 }
             });
         </script>
@@ -171,3 +147,61 @@ def upload_pdf():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8000)))
+    # Para produção, use o comando abaixo: 
+
+# # Nova página para envio via Webhook
+# @app.route('/webhook')
+# def webhook_page():
+#     html_content = '''
+#     <!DOCTYPE html>
+#     <html lang="pt-BR">
+#     <head>
+#         <meta charset="UTF-8">
+#         <title>Envio via Webhook</title>
+#     </head>
+#     <body>
+#         <h2>Envio de Arquivos via Webhook</h2>
+#         <form id="webhookForm">
+#             <label for="url">URL do Webhook:</label>
+#             <input type="text" id="url" name="url" placeholder="Digite a URL do webhook" required><br><br>
+#             <input type="file" id="files" name="files" multiple required>
+#             <button type="submit">Enviar via Webhook</button>
+#         </form>
+
+#         <div id="webhookResult"></div>
+
+#         <script>
+#             const webhookForm = document.getElementById("webhookForm");
+#             const webhookResult = document.getElementById("webhookResult");
+
+#             webhookForm.addEventListener("submit", async (e) => {
+#                 e.preventDefault();
+
+#                 const url = document.getElementById("url").value;
+#                 const files = document.getElementById("files").files;
+#                 const formData = new FormData();
+
+#                 for (let file of files) {
+#                     formData.append("files", file, file.name);
+#                 }
+
+#                 try {
+#                     const response = await fetch(url, {
+#                         method: "POST",
+#                         body: formData
+#                     });
+
+#                     if (response.ok) {
+#                         webhookResult.innerHTML = "<p>Arquivos enviados com sucesso!</p>";
+#                     } else {
+#                         webhookResult.innerHTML = "<p>Erro ao enviar arquivos.</p>";
+#                     }
+#                 } catch (error) {
+#                     webhookResult.innerHTML = `<p>Erro: ${error.message}</p>`;
+#                 }
+#             });
+#         </script>
+#     </body>
+#     </html>
+#     '''
+#     return render_template_string(html_content)
